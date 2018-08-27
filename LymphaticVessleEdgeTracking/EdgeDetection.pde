@@ -1,102 +1,223 @@
+/*
+    Steps
+    1. Read in the line
+    2. Find the background colour
+    3. Find the array of dark pixels
+    4. Average Index in the PVector
+    
+*/
+
 
 public class EdgeDetection
 {
-    EdgeDetection() {
+    private PVector displayOffset = new PVector(0, 24);
+    EdgeDetection() {}
+    
+    public ArrayList<Integer> getEdgeBetweenPoints(PVector p1, PVector p2) {
+        ArrayList<Integer> capturePixels = getPixelsBetweenPoints(p1, p2);
+        getBackgroundColour(capturePixels);
         
+        return capturePixels;
+    }
+    
+    public ArrayList<Integer> getPixelsBetweenPoints(PVector p1, PVector p2) {
+        ArrayList<Integer> capturePixels = new ArrayList<Integer>();
+        
+        PVector pos = p1.copy();
+        PVector dir = PVector.sub(p2, p1);
+        dir.normalize();
+        dir.mult(1);
+        stroke(0);
+        
+        for (int i = 0; i < PVector.dist(p1, p2); i++) {
+            pos = PVector.add(pos, dir);
+            int index = (int)pos.x + (int)(pos.y - displayOffset.y) * capture.width;
+            color c = capture.pixels[index];
+            fill(c);
+            float pixelW = capture.width / PVector.dist(p1, p2);
+            rect(i * pixelW, capture.height + displayOffset.y, pixelW, 10);
+            fill(0);
+            text((int)brightness(c), i * pixelW + pixelW/2, capture.height + displayOffset.y + 16, pixelW);
+            capturePixels.add(c);
+        }
+        
+        return capturePixels;
     }
     
     /*
-        1. Pass through samples
-        2. Look for all the darkest pixels
-            a. If there is only one section, then there is only one line
-            b. If there is two sections, then there are two lines
-            c. Noise may be apparent so the other samples need to be analised
-            (The samples are in a multidimentional array so there should be a 
-            line from one side of the grid to the other.) 
-            
-            
-        Part 2
-        With what I have now, I need to check the width of each "edge", if the 
-        program thinks there is 3 lines, but 2 are about 4 pixels wide and 1
-        is only a single pixel, then the smallest is noise and ignore it.
-        Standard div seems to be the best analysing function I know.
+        Get the darkest pixel of the array
+        Get the difference in darkness between each pixel and the darkest pixel
+        Then find the standard deviation
+        Highlight all pixels with Diff < standard deviation
         
-        Initially
-        The line needs to start on either side and find out if there is 1 or 2 
-        edges. From there record their position and from there just predict and
-        update their location to track them, ignore the line and only use 
-        y = mx + b to determine the location position.
+        This function works by:
+        1. Getting the darkest pixel index from the array
+        2. Calculate the birghtness differences for each pixel from the darkest pixel
+        3. Find the standard deviation of those darknesses
+        4. From the darkest index look left and right for all pixels that have a difference 
+           less than the standard deviation.
+        5. Take a weighted average of those pixels to determine the location of the edge
+        
+        TODO - I want to change that array search to be more efficient
     */
-    
-    public void analyse(ArrayList<ArrayList<Integer>> samples) {
-        ArrayList<ArrayList<Integer>> darkestPixels = new ArrayList<ArrayList<Integer>>();
-        ArrayList<Integer> lineSize = new ArrayList<Integer>();
-        
-        for (ArrayList<Integer> sample : samples) {
-            ArrayList<Integer> darkPixels = getDarkestPixels(sample);
-            darkestPixels.add(darkPixels);
-            lineSize.add(getLineCount(darkPixels));
-        }
-    }
-    
-    public ArrayList<Integer> getDarkestPixels(ArrayList<Integer> sample) {
-        if (sample == null || sample.size() == 0)
-            return null;
-            
+    public float diffLessStd(ArrayList<Integer> capturePixels) {
+        float min = brightness(capturePixels.get(0));
         int darkestIndex = 0;
-        ArrayList<Integer> darkestIndexes = new ArrayList<Integer>();
+        ArrayList<Integer> differences = new ArrayList<Integer>();
         
-        for (int i = 1; i < sample.size(); i++) {
-            if (sample.get(i) < sample.get(darkestIndex)) {
+        // Find the darkest pixel from the array
+        for (int i = 0; i < capturePixels.size(); i++) {
+            Integer v = capturePixels.get(i);
+            
+            if (brightness(v) < min) {
+                min = brightness(v);
                 darkestIndex = i;
-                darkestIndexes = new ArrayList<Integer>();
-            }
-            
-            if (sample.get(i).equals(sample.get(darkestIndex))) {
-                darkestIndexes.add(i);    
             }
         }
         
-        return darkestIndexes;
-    }
-    
-    public Integer getLineCount(ArrayList<Integer> darkestPixels) {
-        int lineCount = 1;
-        int lineWidthCount = 1;
-        ArrayList<Integer> lineWidth = new ArrayList<Integer>();
+        // Calculate the brightness differences between each pixel and the darkest pixel 
+        for (Integer v : capturePixels) { 
+            differences.add( (int) abs(brightness(v) - min) );
+        }
         
-        for (int i = 1; i < darkestPixels.size(); i++) {
-            if (darkestPixels.get(i - 1) != darkestPixels.get(i) - 1) {
-                lineWidth.add(lineWidthCount);
-                lineWidthCount = 1;
-                lineCount++;
+        // Calculate the standardDeviation from the brightness differences
+        float std = standardDeviation(differences);
+        ArrayList<Integer> edgeIndexes = new ArrayList<Integer>();
+        
+        // Look right from the darkest index
+        for (int i = darkestIndex; i < differences.size(); i++) {
+            float diff = differences.get(i);
+            if (diff < std) {
+                float pixelW = capture.width / capturePixels.size();
+                fill(capturePixels.get(i));
+                rect(i * pixelW, capture.height + displayOffset.y + 32, pixelW, 10);
+                edgeIndexes.add(i);
             } else {
-                lineWidthCount++;    
+                i = differences.size();
             }
         }
-        lineWidth.add(lineWidthCount);
-        println("Line count = " + lineCount + ", Line Widths: " + lineWidth);
-        return lineCount;
+        
+        // Look left from the darkest point
+        for (int i = darkestIndex; i >= 0; i--) {
+            float diff = differences.get(i);
+            if (diff < std) {
+                float pixelW = capture.width / capturePixels.size();
+                fill(capturePixels.get(i));
+                rect(i * pixelW, capture.height + displayOffset.y + 32, pixelW, 10);
+                edgeIndexes.add(i);
+            } else {
+                i = -1;
+            }
+        }
+        
+        /*
+        Weighted Average of the edge indexes
+        Take the each pixels difference with the standard deviation, treat that as
+        a weight and then do a weighted average of those values to find the vector
+        position of the edge.
+        Weighted average = sumproduct(indexes, weights) / sum(weights)
+        */
+        float weightedAvg = 0;
+        float sumProduct = 0;
+        float sumWeights = 0;
+        float[] weights = new float[edgeIndexes.size()];
+        
+        for (int i = 0; i < edgeIndexes.size(); i++) {
+            weights[i] = std - differences.get(i);
+            sumWeights += weights[i];
+            sumProduct += edgeIndexes.get(i) * weights[i];
+        }
+        
+        weightedAvg = sumProduct / sumWeights;
+        
+        {
+        float pixelW = capture.width / capturePixels.size();
+        rect(weightedAvg * pixelW, capture.height + displayOffset.y + 64, pixelW, 10);
+        }
+        
+        return weightedAvg;
     }
     
-    public ArrayList<ArrayList<Integer>> convertDarkPixelsToArray(ArrayList<Integer> darkestPixels) {
-        ArrayList<ArrayList<Integer>> edges = new ArrayList<ArrayList<Integer>>();
-        ArrayList<Integer> edge = new ArrayList<Integer>();
+    public ArrayList<Integer> highlightEdge(ArrayList<Integer> capturePixels) {
+        float min = brightness(capturePixels.get(0));
+        float mean = 0;
+        float variance = 0;
+        float std = 0;
         
-        if (darkestPixels.size() == 0)
-            return edges;
-            
-        edge.add(darkestPixels.get(0));
-        for (int i = 1; i < darkestPixels.size(); i++) {
-            if (darkestPixels.get(i - 1) != darkestPixels.get(i) - 1) {
-                edges.add(edge);
-                edge = new ArrayList<Integer>();
-            }
-            
-            edge.add(darkestPixels.get(i));
+        for (Integer v : capturePixels) { 
+            mean += brightness(v); 
+            min = min(min, brightness(v));
         }
         
-        edges.add(edge);
-        return edges;
+        mean /= capturePixels.size();
+        
+        for (Integer v : capturePixels) { 
+            float bright = brightness(v);
+            variance += (mean - bright) * (mean - bright); 
+        }
+        
+        variance /= capturePixels.size();
+        
+        std = (float)Math.sqrt(variance);
+        
+        println("Min: " + min + ", Mean: " + mean + ", Variance: " + variance + ", Std: " + std + ", min + std = " + (min + std));
+        
+        ArrayList<Integer> darkPixels = new ArrayList<Integer>();
+        
+        for (int i = 0; i < capturePixels.size(); i++) {
+            color c = capturePixels.get(i);
+            if (brightness(c) <= min + std) {
+                float pixelW = capture.width / capturePixels.size();
+                fill(c);
+                rect(i * pixelW, capture.height + displayOffset.y + 32, pixelW, 10);
+                darkPixels.add(i);
+            }
+        }
+        
+        return darkPixels;
+    }
+    
+    private void getBackgroundColour(ArrayList<Integer> capturePixels) {
+        float R = 0;
+        float G = 0;
+        float B = 0;
+        
+        for (Integer pixel : capturePixels) {
+            R += red(pixel);
+            G += green(pixel);
+            B += blue(pixel);
+        }
+        
+        R /= capturePixels.size();
+        G /= capturePixels.size();
+        B /= capturePixels.size();
+        
+        fill(R, G, B);
+        rect(64, height - 64, 64, 64);
+        fill(0);
+        text((int) brightness(color(R, G, B)), 64 + 32, height - 64 + 32); 
+    }
+    
+    public float standardDeviation(ArrayList<Integer> capturePixels) {
+        float mean = 0;
+        float variance = 0;
+        float std = 0;
+        
+        for (Integer v : capturePixels) { 
+            mean += brightness(v); 
+        }
+        
+        mean /= capturePixels.size();
+        
+        for (Integer v : capturePixels) { 
+            float bright = brightness(v);
+            variance += (mean - bright) * (mean - bright); 
+        }
+        
+        variance /= capturePixels.size();
+        
+        std = (float)Math.sqrt(variance);
+        
+        return std;
     }
 }
