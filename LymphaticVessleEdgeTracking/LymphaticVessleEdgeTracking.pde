@@ -161,7 +161,7 @@ public void draw() {
     
     for (Line line : lines) {
         line.analyse();
-        line.display();
+        //line.display();
     }
     
     // Draw the line being created currently if mouse held

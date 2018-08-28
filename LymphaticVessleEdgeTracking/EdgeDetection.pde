@@ -15,7 +15,6 @@ public class EdgeDetection
     
     public ArrayList<Integer> getEdgeBetweenPoints(PVector p1, PVector p2) {
         ArrayList<Integer> capturePixels = getPixelsBetweenPoints(p1, p2);
-        getBackgroundColour(capturePixels);
         
         return capturePixels;
     }
@@ -45,11 +44,6 @@ public class EdgeDetection
     }
     
     /*
-        Get the darkest pixel of the array
-        Get the difference in darkness between each pixel and the darkest pixel
-        Then find the standard deviation
-        Highlight all pixels with Diff < standard deviation
-        
         This function works by:
         1. Getting the darkest pixel index from the array
         2. Calculate the birghtness differences for each pixel from the darkest pixel
@@ -136,66 +130,6 @@ public class EdgeDetection
         }
         
         return weightedAvg;
-    }
-    
-    public ArrayList<Integer> highlightEdge(ArrayList<Integer> capturePixels) {
-        float min = brightness(capturePixels.get(0));
-        float mean = 0;
-        float variance = 0;
-        float std = 0;
-        
-        for (Integer v : capturePixels) { 
-            mean += brightness(v); 
-            min = min(min, brightness(v));
-        }
-        
-        mean /= capturePixels.size();
-        
-        for (Integer v : capturePixels) { 
-            float bright = brightness(v);
-            variance += (mean - bright) * (mean - bright); 
-        }
-        
-        variance /= capturePixels.size();
-        
-        std = (float)Math.sqrt(variance);
-        
-        println("Min: " + min + ", Mean: " + mean + ", Variance: " + variance + ", Std: " + std + ", min + std = " + (min + std));
-        
-        ArrayList<Integer> darkPixels = new ArrayList<Integer>();
-        
-        for (int i = 0; i < capturePixels.size(); i++) {
-            color c = capturePixels.get(i);
-            if (brightness(c) <= min + std) {
-                float pixelW = capture.width / capturePixels.size();
-                fill(c);
-                rect(i * pixelW, capture.height + displayOffset.y + 32, pixelW, 10);
-                darkPixels.add(i);
-            }
-        }
-        
-        return darkPixels;
-    }
-    
-    private void getBackgroundColour(ArrayList<Integer> capturePixels) {
-        float R = 0;
-        float G = 0;
-        float B = 0;
-        
-        for (Integer pixel : capturePixels) {
-            R += red(pixel);
-            G += green(pixel);
-            B += blue(pixel);
-        }
-        
-        R /= capturePixels.size();
-        G /= capturePixels.size();
-        B /= capturePixels.size();
-        
-        fill(R, G, B);
-        rect(64, height - 64, 64, 64);
-        fill(0);
-        text((int) brightness(color(R, G, B)), 64 + 32, height - 64 + 32); 
     }
     
     public float standardDeviation(ArrayList<Integer> capturePixels) {
