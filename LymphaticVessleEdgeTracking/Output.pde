@@ -6,6 +6,7 @@ import java.util.Set;
 public class Output 
 {
     private ArrayList<Timestamp> timestamps = new ArrayList<Timestamp>();
+    private boolean recording = false;
     
     public Output() {
         
@@ -51,4 +52,7 @@ public class Output
         
         saveStrings("output.txt", finalOutput);
     }
+    
+    public void setRecording(boolean value) { this.recording = value; }
+    public boolean getRecording() { return recording; }
 }
