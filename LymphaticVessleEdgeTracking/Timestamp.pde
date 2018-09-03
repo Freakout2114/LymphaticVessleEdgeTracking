@@ -1,27 +1,31 @@
 
 public class Timestamp 
 {
-    private int time = 0;
+    private int timestamp;
     private int id;
-    private PVector p1, p2;
+    private int edgeSize = 1;
+    private float e1Displacement, e2Displacement;
+    private float diameter;
     
-    public Timestamp(int id, PVector p1) {
-        this(id, p1, null);
+    public Timestamp(int id, float e1Displacement) {
+        this.id = id;
+        this.timestamp = timeStamp;    // Sourced from the global variable in LymphaticVessleEdgeTracking
+        this.e1Displacement = e1Displacement;
     }
     
-    public Timestamp(int id, PVector p1, PVector p2) {
+    public Timestamp(int id, float e1Displacement, float e2Displacement, float diameter) {
         this.id = id;
-        this.p1 = p1;
-        this.p2 = p2;
+        this.timestamp = timeStamp;    // Sourced from the global variable in LymphaticVessleEdgeTracking
+        this.e1Displacement = e1Displacement;
+        this.e2Displacement = e2Displacement;
+        this.diameter = diameter;
+        this.edgeSize = 2;
     }
     
     public int getId() { return id; }
-    public float getTime() { return time; }
-    public float getDistance() { 
-        float distance = PVector.dist(p1, p2);
-        distance *= 1000;
-        distance = (int) distance;
-        distance /= 1000;
-        return distance; 
-    }
+    public int getTimestamp() { return timestamp; }
+    public float getE1Displacement() { return  e1Displacement; }
+    public float getE2Displacement() { return e2Displacement; }
+    public float getDiameter() { return diameter; }
+    public int getEdgeSize() { return edgeSize; }
 }

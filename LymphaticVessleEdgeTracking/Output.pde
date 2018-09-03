@@ -5,7 +5,7 @@ import java.util.Set;
 
 public class Output 
 {
-    private ArrayList<Timestamp> timestamps = new ArrayList<Timestamp>();
+    private HashMap<Integer, ArrayList<Timestamp>> timestamps = new HashMap<Integer, ArrayList<Timestamp>>;
     private boolean recording = false;
     
     public Output() {
@@ -17,42 +17,29 @@ public class Output
     }
     
     public void addTimestamp(Timestamp timestamp) {
-        println("Adding timestamps");
-        timestamps.add(timestamp);
+        ArrayList<Timestamp> list = timestamps.get(timestamp.getTimestamp());
+        
+        if (list == null) {
+            list = new ArrayList<Timestamp>();    
+            timestamps.put(timestamp.getTimestamp(), list);
+        }
+        
+        list.add(timestamp);
+        
     }
     
+    /* Output format
+    
+    Timestamp   {ID   e1 displacement e2 displacement} {id diameter}
+    
+    */
+    
     public void exportData() {
-        HashMap<Integer, String> timestampsHashMap = new HashMap<Integer, String>();
         
-        for (Timestamp ts : timestamps) {
-            int id = ts.getId();  
-            
-            String values = timestampsHashMap.get(id);
-            if (values == null) {
-                String input = id + "," + ts.getDistance();
-                timestampsHashMap.put(id, input);
-            } else {
-                values += "," + ts.getDistance();
-                timestampsHashMap.put(id, values);
-            }
-        }
-        
-        
-        String[] finalOutput = new String[timestampsHashMap.size()];
-        Set set = timestampsHashMap.entrySet();
-        Iterator iterator = set.iterator();
-        int index = 0;
-        while(iterator.hasNext()) {
-           Map.Entry mentry = (Map.Entry)iterator.next();
-           System.out.print("key is: "+ mentry.getKey() + " & Value is: ");
-           System.out.println(mentry.getValue());
-           finalOutput[index] = (String)mentry.getValue();
-           index++;
-        }
         
         saveStrings("output.txt", finalOutput);
     }
     
     public void setRecording(boolean value) { this.recording = value; }
-    public boolean getRecording() { return recording; }
+    public boolean isRecording() { return recording; }
 }
