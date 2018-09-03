@@ -1,8 +1,8 @@
 
 public class Timestamp 
 {
+    private int time = 0;
     private int id;
-    private float time;
     private PVector p1, p2;
     
     public Timestamp(int id, PVector p1) {
@@ -13,7 +13,6 @@ public class Timestamp
         this.id = id;
         this.p1 = p1;
         this.p2 = p2;
-        this.time = video.time();
     }
     
     public int getId() { return id; }
