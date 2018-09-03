@@ -1,11 +1,11 @@
 
 public class Button
 {
-    private float btnWidth, btnHeight;
-    private PVector pos;
-    private String text;
-    private String[] subText;
-    private boolean mouseHover;
+    protected float btnWidth, btnHeight;
+    protected PVector pos;
+    protected String text;
+    protected String[] subText;
+    protected boolean mouseHover;
     
     Button() {
         this("Click Me", new PVector(8, 8), 64, 24);

@@ -1,22 +1,25 @@
 import processing.video.*;
 
-Movie video;    // Used for loading in the video files
-Capture camera;    // Used for webcam 
-String inputMode = "Video"; // "Camera" for webcam, "Video" for video file.
-PImage capture;   // The frame sources from either the webcam or video file.
-PreProcessing preProcessing;   // PreProcessing object to be globally used.
-EdgeDetection edgeDetection;   // EdgeDection object to be globally used.
-Output output;    // Output object used to track the timestamps (Edge positions)
+Movie video;                    // Used for loading in the video files
+Capture camera;                 // Used for webcam 
+String inputMode = "Video";     // "Camera" for webcam, "Video" for video file.
+PImage capture;                 // The image frame sourced from either the webcam or video file.
+PreProcessing preProcessing;    // PreProcessing object to be globally used.
+EdgeDetection edgeDetection;    // EdgeDection object to be globally used.
+Output output;                  // Output object used to track the timestamps (Edge positions)
 
-boolean pauseVideo = true;    // Allows the video to be started / stopped
-public ArrayList<Button> buttons = new ArrayList<Button>();    
-ArrayList<Line> lines = new ArrayList<Line>();
+boolean pauseVideo = true;      // Allows the video to be started / stopped
+ArrayList<Button> buttons;      // List of all the custom buttons at the top of the screen
+ArrayList<Line> lines;          // List of all the line objects that are tracking the edges
 
-boolean mouseHeld = false;   // Used to make a line
-PVector mouseInitialPos;   // When the use is draging the mouse, this is the starting vector of the mouse
+boolean mouseHeld = false;      // Used when creating a line by clicking and draging
+PVector mouseInitialPos;        // When the user is creating a line by draging the mouse, this is the starting vector of the mouse
+
+int timeStamp = 0;              // used as a time stamp in the output recordings
 
 public void setup() {
     size(800, 800);
+    surface.setResizable(true);
     frameRate(120);   
     
     Initialise();
@@ -24,24 +27,35 @@ public void setup() {
 
 public void Initialise() {
     // Creation of the buttons
-    float xPosition = 0;
+    float xPosition = 0;    // Used to space the position of the buttons accross the page
+    buttons = new ArrayList<Button>(); 
     buttons.add( new InputMode() );
     buttons.add( new StartStopVideo() );
     buttons.add( new PlaybackSpeed() );
     buttons.add( new GreyScaleImage() );
     buttons.add( new InvertImage() );
     buttons.add( new BitDepth() );
+    buttons.add( new Record() );
     buttons.add( new ExportData() );
-    buttons.add( new RestartRecording() );
     
     for (Button btn : buttons) {
         btn.setPosition(new PVector(xPosition, 0));
         xPosition += btn.getWidth();
     }
+     
+    // List of all the lines that will be tracking the edges 
+    lines = new ArrayList<Line>();
     
+    // Create the new Edge detection object
     edgeDetection = new EdgeDetection();
+    
+    // Create the new Pre-Processing object
     preProcessing = new PreProcessing();
+    
+    // Create the Output object
     output = new Output();
+    
+    // TODO - Remove these later
     //loadCamera();
     loadVideo();
 }
@@ -74,15 +88,16 @@ public void fileSelected(File selection) {
     } else {
         println("User selected " + selection.getAbsolutePath());
         video = new Movie(this, selection.getAbsolutePath());
+        video.play();
+        video.pause();
         println("Loaded File Complete");
-        //video.loop();  
+        capture = loadVideoNextFrame(true);
     }
 }
 
 public void loadVideo() {
-    video = new Movie(this, "C:/Users/Harry/Desktop/Assignments/Year 4/SEM 1/SENG4211A - SE FINAL PROJECT/Assignment/Individual/Software/V1/vid1.avi");
-    //video = new Movie(this, "C:/Users/Harry/Desktop/Assignments/Year 4/SEM 1/SENG4211A - SE FINAL PROJECT/Assignment/Individual/Software/V1/vid3.mpg");
-    video.loop();    
+    File file = new File("C:/Users/Harry/Desktop/Assignments/Year 4/SEM 1/SENG4211A - SE FINAL PROJECT/Assignment/Individual/Software/V1/vid1.avi");
+    fileSelected(file);
 }
 
 public PImage loadCameraNextFrame() {
@@ -94,9 +109,6 @@ public PImage loadCameraNextFrame() {
     }
     
     return camera;
-    // The following does the same, and is faster when just drawing the image
-    // without any additional resizing, transformations, or tint.
-    //set(0, 0, cam);
 }
 
 public PImage loadVideoNextFrame() {
@@ -104,64 +116,72 @@ public PImage loadVideoNextFrame() {
 }
 
 public PImage loadVideoNextFrame(boolean forceLoad) {
-    if (video == null)
+    if (video == null) {
+        println("INFO:   loadVideoNextFrame   video == null");
         return null;
+    }
         
-    if (video.available() == true) {
-        // If forceLoad, ignore the pause function and return the current frame
-        if (forceLoad) {
-            video.read();  
-            return video;
-        }
-        
+    // If forceLoad, ignore the pause function and return the current frame
+    if (forceLoad) {
+        video.read();  
+        return video;
+    }
+    if (video.available()) {
         // First Frame of the video to be loaded
         if (pauseVideo && capture == null) {
             video.read();
             video.pause();
+            return video;
         }
         
         // If video loaded and not paused
-        if (!pauseVideo)
+        if (!pauseVideo) {
+            timeStamp++;
             video.read();
-        else   // Video Paused so just return current frame again
-            return capture;
+            return video;
+        }
     }
-    
-    return video;
+    // Video Paused so just return current frame again
+    return capture;
 }
 
 public void draw() {
     background(#ffffff);
     fill(0);
+    textAlign(LEFT);
+    text("FrameCount: " + (int)frameCount, 32, height - 48);
+    text("TimeStamp: " + (int)timeStamp, 32, height - 32);
     text("FPS: " + (int)frameRate, 32, height - 16);
     
-    // Get the next frame of video or webcam
-    if (inputMode.equals("Camera")) {
-        capture = loadCameraNextFrame();
-    } else {
-        capture = loadVideoNextFrame();
-        if (capture != null) {
-            float percentage = video.time() / video.duration();
-            fill(255);
-            stroke(0);
-            line(5, 24 + 5 + capture.height, capture.width - 5, 24 + 5 + capture.height);
-            rect(capture.width * percentage - 5, 24 + capture.height, 5, 10);
+    for (int itterations = 0; itterations < 5; itterations++) {
+        // Get the next frame of video or webcam
+        if (inputMode.equals("Camera")) {
+            capture = loadCameraNextFrame();
+        } else {
+            capture = loadVideoNextFrame();
+            if (capture != null) {
+                float percentage = video.time() / video.duration();
+                fill(255);
+                stroke(0);
+                line(5, 24 + 5 + capture.height, capture.width - 5, 24 + 5 + capture.height);
+                rect(capture.width * percentage - 5, 24 + capture.height, 5, 10);
+            }
         }
-    }
-    
-    if (capture != null) {
-        preProcessing.applyFilters();
-        image(capture, 0, 24);
+        
+        if (capture != null) {
+            preProcessing.applyFilters();
+            image(capture, 0, 24);
+        }
+        
+        for (Line line : lines) {
+            line.analyse();
+            //line.display();
+        }
     }
     
     for (Button button : buttons) {
         button.mouseHover();
         button.display();
-    }
-    
-    for (Line line : lines) {
-        line.analyse();
-        //line.display();
     }
     
     // Draw the line being created currently if mouse held

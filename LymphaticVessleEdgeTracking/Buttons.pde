@@ -165,16 +165,48 @@ public class ExportData extends Button
     }
 }
 
-public class RestartRecording extends Button
-{
-    RestartRecording() {
-        setText("Reset Recording");
+public class Record extends Button
+{    
+    Record() {
+        setText("Recording");
         setButtonSizeAuto();
+        setText("Record");
     }
     
     @Override
     public void buttonPressed() {
-        println("Reset Recording");
-        output.resetRecording(); 
+        if (getText().equals("Record")) {
+            setText("Recording");
+            output.setRecording(true);
+        } else {
+            setText("Record");
+            output.setRecording(false);
+        }
+    }
+    
+    @Override
+    public void display() {
+        if (mouseHover) {
+            if (subText != null)
+                displayDropdown();
+            stroke(0, 0, 50);
+            if (output.getRecording()) {
+                fill(200, 0, 0);    
+            } else {
+                fill(200, 225, 225);
+            }
+        } else {
+            stroke(0);
+            if (output.getRecording()) {
+                fill(#e10000);
+            } else {
+                fill(#e1e1e1);
+            }
+            
+        }
+        rect(pos.x, pos.y, btnWidth, btnHeight);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text(text, pos.x + btnWidth / 2, pos.y + btnHeight / 2);
     }
 }
