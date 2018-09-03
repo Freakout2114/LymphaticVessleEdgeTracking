@@ -19,7 +19,13 @@ public class Point {
     }
     
     public void display() {
+        if (pos == null) { return; }
         fill(255);
+        ellipse(pos.x, pos.y, radius, radius);  
+    }
+    
+    public void displayNoStyle() {
+        if (pos == null) { return; }
         ellipse(pos.x, pos.y, radius, radius);  
     }
     

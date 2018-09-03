@@ -161,7 +161,7 @@ public void draw() {
     
     for (Line line : lines) {
         line.analyse();
-        line.display();
+        //line.display();
     }
     
     // Draw the line being created currently if mouse held
@@ -196,16 +196,16 @@ public void mouseReleased() {
                 // Then find the line that should be selected
                 for (Line line : lines) {
                     // Ensure the mouse is within the x coords of both the points of the line
-                    if ((line.p1.getX() < line.p2.getX() && mouseX >= line.p1.getX() && mouseX <= line.p2.getX()) ||
-                        (line.p1.getX() > line.p2.getX() && mouseX >= line.p2.getX() && mouseX <= line.p1.getX())) {
+                    if ((line.linePos1.getX() < line.linePos2.getX() && mouseX >= line.linePos1.getX() && mouseX <= line.linePos2.getX()) ||
+                        (line.linePos1.getX() > line.linePos2.getX() && mouseX >= line.linePos2.getX() && mouseX <= line.linePos1.getX())) {
                         
                         // Using the equation y = mx + b, we can substitute the mouseX and compare the expected
                         // y value of the line to the mouseY, if within a certain distance of each other then assume
                         // the user is trying to select this line
                         float m, x, b, y;
-                        m = (line.p2.getY() - line.p1.getY()) / (line.p2.getX() - line.p1.getX());
+                        m = (line.linePos2.getY() - line.linePos1.getY()) / (line.linePos2.getX() - line.linePos1.getX());
                         x = mouseX;        
-                        b = line.p1.getY() - m * line.p1.getX();
+                        b = line.linePos1.getY() - m * line.linePos1.getX();
                         y = (m * x + b);
                         
                         if (PVector.dist(new PVector(mouseX, mouseY), new PVector(mouseX, y)) < 8) {

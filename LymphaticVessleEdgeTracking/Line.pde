@@ -2,194 +2,117 @@
 public class Line
 {
     private int id;
-    private Point p1, p2, p1Current;
-    private PVector p1Initial;
+    private Point linePos1, linePos2;    // Position of the line end points
+    private Point initialEdge1Pos, initialEdge2Pos;    // Position of the edge walls at the first frame
+    private Point edge1Pos, edge2Pos;    // Position of the edge walls
+    private Point previousEdge1Pos, previousEdge2Pos;    // Position of the edge walls
+    private Point predictedEdge1Pos, predictedEdge2Pos;    // Position of the edge walls
     private boolean selected = false;
+    private float windowSize = 20;
     
     Line(PVector p1, PVector p2, int id) {
-        this.p1 = new Point(p1);
-        this.p2 = new Point(p2);
+        this.linePos1 = new Point(p1);
+        this.linePos2 = new Point(p2);
         this.id = id;
+        
+        edge1Pos = new Point(null);
+        previousEdge1Pos = new Point(null);
+        predictedEdge1Pos = new Point(null);
+        
         initialise();
     }
     
-    public void firstOutputVersion() {
-        // Get x samples along the drawn line
-        ArrayList<ArrayList<Integer>> samples = getSampleRows(5);
+    private void initialise() {
+        // Get the pixels between the two points
+        ArrayList<Integer> capturePixels = edgeDetection.getEdgeBetweenPoints(linePos1.pos, linePos2.pos);
         
-        // Used to record the found "edges" along the sample line (Samples > edges > pixels)
-        ArrayList<ArrayList<ArrayList<Integer>>> samplesEdges = new ArrayList<ArrayList<ArrayList<Integer>>>();
+        // Return the darkest pixel within that capture
+        float edgePosition = edgeDetection.diffLessStd(capturePixels);
+        PVector pvectorPosition = indexToPVector(edgePosition);
         
-        for (ArrayList<Integer> sample : samples) {
-            ArrayList<Integer> darkPixels = edgeDetection.getDarkestPixels(sample);
-            ArrayList<ArrayList<Integer>> edges = edgeDetection.convertDarkPixelsToArray(darkPixels);
-            //println(edges);
-            
-            // If the number of "edges" found in the sample is > 2 remove the smallest width edge
-            while (edges.size() > 2) {
-                int smallest = 0;
-                for (int i = 1; i < edges.size(); i++) {
-                    if (edges.get(i).size() < edges.get(smallest).size()) {
-                        smallest = i;    
-                    }
-                }
-                //println("Removed noise at index: " + smallest + ", edge width: " + edges.get(smallest).size());
-                edges.remove(smallest);
-            }
-            
-            samplesEdges.add(edges);
-        }
-        
-        PVector edgeP1 = null;
-        PVector edgeP2 = null;
-        
-        int middleSample = samples.size() / 2;
-        for (ArrayList<Integer> edges : samplesEdges.get(middleSample)) {
-            float averageIndex = 0;
-            for (Integer pixelIndex : edges) {
-                averageIndex += pixelIndex;
-            }
-            averageIndex /= edges.size();
-            PVector edgePosition = indexToPVector(averageIndex);
-            stroke(255, 0, 0);
-            noFill();
-            ellipse(edgePosition.x, edgePosition.y, 10, 10);
-            if (edgeP1 == null) {
-                edgeP1 = edgePosition.copy();
-            } else {
-                edgeP2 = edgePosition.copy();
-            }
-        }
-        
-        if (p1Initial == null)
-            p1Initial = edgeP1;
-        
-        if (edgeP2 == null)
-            edgeP2 = p1Initial;
-        
-        if (!pauseVideo) {
-            Timestamp timestamp = new Timestamp(id, edgeP1, edgeP2);
-            output.addTimestamp(timestamp);
-        }
-    }
-    
-    public void initialise() {
-        ArrayList<ArrayList<Integer>> samples = getSampleRows(5);
-        ArrayList<ArrayList<Integer>> darkestPixelSamples = new ArrayList<ArrayList<Integer>>();
-        
-        for (ArrayList<Integer> sample : samples) {
-            ArrayList<Integer> darkPixels = edgeDetection.getDarkestPixels(sample);
-            ArrayList<ArrayList<Integer>> edges = edgeDetection.convertDarkPixelsToArray(darkPixels);
-            println(edges);
-            darkestPixelSamples.add(darkPixels);
-        }
-        
-        float averagePos = 0;
-        int sampleSize = 0;
-        int lineCountAverage = 0;
-        for (ArrayList<Integer> darkestPixelSample : darkestPixelSamples) {
-            lineCountAverage += edgeDetection.getLineCount(darkestPixelSample);
-            for (int index :  darkestPixelSample) {
-                averagePos += index;
-                sampleSize++;
-                PVector pos = indexToPVector(index);
-                fill(255, 0, 0);
-                stroke(255, 0, 0);
-                ellipse(pos.x, pos.y, 2, 2); 
-            }
-        }
-        
-        lineCountAverage /= darkestPixelSamples.size();
-        println("lineCountAverage: " + lineCountAverage);
-        averagePos /= (float)sampleSize;
-        p1Current = new Point(indexToPVector(averagePos));
-    }
-    
-    public void step() {
-        
+        // Set the defaults for the initialisation
+        edge1Pos = new Point(pvectorPosition);
+        previousEdge1Pos = new Point(pvectorPosition);
+        predictedEdge1Pos = new Point(pvectorPosition);
     }
     
     public void analyse() {
-        if (selected) {
-            ArrayList<ArrayList<Integer>> samples = getSampleRows(5);
-            edgeDetection.analyse(samples);
-        }
-        firstOutputVersion();
-    }
-    
-    public ArrayList<ArrayList<Integer>> getSampleRows(int rows) {
-        ArrayList<ArrayList<Integer>> samples = new ArrayList<ArrayList<Integer>>();
-        PVector offset = PVector.sub(p2.pos, p1.pos);
-        offset.normalize();
-        offset.mult(1);
-        offset = new PVector(-offset.y, offset.x);
         
-        for (int i = -rows/2; i <= rows/2; i++) {
-            PVector v1 = new PVector(p1.pos.x + offset.x * i, p1.pos.y + offset.y * i);
-            PVector v2 = new PVector(p2.pos.x + offset.x * i, p2.pos.y + offset.y * i);
-            samples.add(getSampleRow(v1, v2));
-        }
-
-        if (selected)
-        for (int i = 0; i < samples.size(); i++) {
-            for (int j = 0; j < samples.get(i).size(); j++) {
-                fill(samples.get(i).get(j));    
-                rect(j * 10, 24 * 2 + capture.height + 10 * i, 10, 10);
-            }
-        }
+        // Update the previous position of the edge location
+        previousEdge1Pos = new Point(edge1Pos.getPos());
         
-        return samples;
-    }
-    
-    private ArrayList<Integer> getSampleRow(PVector p1, PVector p2) {
-        ArrayList<Integer> samples = new ArrayList<Integer>();
-        float dist = PVector.dist(p1, p2);
-        PVector current = p1.copy();
-        PVector dir = PVector.sub(p2, p1);
-        int sections = (int)dist/1;
-        dir.normalize();
-        dir.mult(dist / sections);
+        // Instead of using the first given points for the line
+        // adjust the window x pixels either side of the predicted edge position
+        PVector newP1, newP2;
+        PVector pointDir = PVector.sub(linePos2.pos, linePos1.pos);
+        pointDir.normalize();
+        pointDir.mult(windowSize);
+        // Predicted Edge
+        //newP1 = PVector.sub(predictedEdge1Pos.getPos(), pointDir);
+        //newP2 = PVectoradd(predictedEdge1Pos.getPos(), pointDir);
+        // Last Edge
+        newP1 = PVector.sub(previousEdge1Pos.getPos(), pointDir);
+        newP2 = PVector.add(previousEdge1Pos.getPos(), pointDir);
         
-        for (int i = 0; i < sections; i++) {
-            current.add(dir);
-            int x = (int)current.x;
-            int y = (int)current.y - 24;
-            int index = x + y * capture.width;
-            color c = capture.pixels[index];
-            samples.add(c);
+        // Display the new window area
+        Point newP1Point = new Point(newP1);
+        Point newP2Point = new Point(newP2);
+        newP1Point.display();
+        newP2Point.display();
+        
+        // Get the pixels from the new Window
+        ArrayList<Integer> capturePixels = edgeDetection.getEdgeBetweenPoints(newP1, newP2);
+        
+        // Get the observed edge location
+        float edgePosition = (int)edgeDetection.diffLessStd(capturePixels);
+        
+        PVector pvectorPosition = indexToPVector(edgePosition, newP1, newP2);
+        
+        // Check if the edge has moved too far away
+        float displacement = PVector.dist(pvectorPosition, predictedEdge1Pos.getPos());
+        float tolerance = PVector.dist(previousEdge1Pos.getPos(), predictedEdge1Pos.getPos());
+        
+        // Set the new position and display
+        if (displacement > 4) {//max(tolerance * 1.5, 3)) {
+            println("Displacement: " + displacement + ", tolerance: " + tolerance);
+            edge1Pos = new Point(previousEdge1Pos.getPos());
+        } else {
+            edge1Pos = new Point(pvectorPosition);
         }
         
-        return samples;
+        noFill(); stroke(255, 0, 0);
+        edge1Pos.displayNoStyle();
+        
+        // Predict the next location
+        PVector velocity = PVector.sub(edge1Pos.getPos(), previousEdge1Pos.getPos());
+        PVector predictedPos = PVector.add(edge1Pos.getPos(), velocity);
+        predictedEdge1Pos = new Point(predictedPos);
+        noFill(); stroke(0, 0, 255);
+        predictedEdge1Pos.displayNoStyle();
+        
     }
     
     public void display() {
-        stroke(255, 80);
-        strokeWeight(1);
-        
-        if (selected) {
-            strokeWeight(3);
-        }
+        stroke(255, 255);
+        if (selected) { strokeWeight(3); } else { strokeWeight(1); }
             
-        line(p1.getX(), p1.getY(), p2.getX(), p2.getY());
+        line(linePos1.getX(), linePos1.getY(), linePos2.getX(), linePos2.getY());
         
-        if (selected) {
-            p1.display(id);
-        } else {
-            p1.display();
-        }
-        
-        p2.display();
-        if (p1Current != null && false)
-            p1Current.display();
+        if (selected) { linePos1.display(id); } else { linePos1.display(); }
+        linePos2.display();
         strokeWeight(1);
     }
     
     public PVector indexToPVector(float index) {
-        PVector dir = PVector.sub(p2.pos, p1.pos);
+        return indexToPVector(index, linePos1.pos, linePos2.pos);
+    }
+    
+    public PVector indexToPVector(float index, PVector p1, PVector p2) {
+        PVector dir = PVector.sub(p2, p1);
         dir.normalize();
         dir.mult(index);
         
-        return PVector.add(p1.pos, dir);
+        return PVector.add(p1, dir);
     }
     
     public boolean getSelected() { return selected; }
