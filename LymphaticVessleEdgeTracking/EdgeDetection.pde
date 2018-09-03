@@ -1,12 +1,3 @@
-/*
-    Steps
-    1. Read in the line
-    2. Find the background colour
-    3. Find the array of dark pixels
-    4. Average Index in the PVector
-    
-*/
-
 
 public class EdgeDetection
 {
@@ -53,10 +44,21 @@ public class EdgeDetection
         5. Take a weighted average of those pixels to determine the location of the edge
         
         TODO - I want to change that array search to be more efficient
+        TODO - Also i need it to take the center pixels more into account then the edge of the array
+        TODO - Maybe look at the new possible line locations and then select the one closest to the predicted position
     */
     public float diffLessStd(ArrayList<Integer> capturePixels) {
+        if (capturePixels.isEmpty()) {
+            return 0;
+        }
+        
+        // Start with the first index as a base for darkest pixel
         float min = brightness(capturePixels.get(0));
+        
+        // Remember what index the darkest pixel was at
         int darkestIndex = 0;
+        
+        // A List to track the differences in brightness between the darkest pixel and every other pixel
         ArrayList<Integer> differences = new ArrayList<Integer>();
         
         // Find the darkest pixel from the array
@@ -78,8 +80,9 @@ public class EdgeDetection
         float std = standardDeviation(differences);
         ArrayList<Integer> edgeIndexes = new ArrayList<Integer>();
         
-        // Look right from the darkest index
-        for (int i = darkestIndex; i < differences.size(); i++) {
+        /*
+        // Look at all pixels that have a brightness < standard deviation
+        for (int i = 0; i < differences.size(); i++) {
             float diff = differences.get(i);
             if (diff < std) {
                 float pixelW = capture.width / capturePixels.size();
@@ -90,17 +93,55 @@ public class EdgeDetection
                 i = differences.size();
             }
         }
+        */
         
-        // Look left from the darkest point
-        for (int i = darkestIndex; i >= 0; i--) {
-            float diff = differences.get(i);
-            if (diff < std) {
+        ArrayList<PVector> possibleEdgeIndexes = new ArrayList<PVector>();
+        
+        // Look at all pixels that have a brightness < standard deviation. This will results in 1 or more possible
+        // edge locations that need to be evaluated for the most likely.
+        for (int i = 0; i < differences.size(); i++) {
+            // Indexes of the possible line
+            int startingIndex = i;
+            int endingIndex = i;
+            
+            // If the current pixel is less than the standard deviation
+            // loop through the entire line to find the start and end position
+            while (i < differences.size() && differences.get(i) < std) {
+                // Debug drawing 
                 float pixelW = capture.width / capturePixels.size();
                 fill(capturePixels.get(i));
                 rect(i * pixelW, capture.height + displayOffset.y + 32, pixelW, 10);
                 edgeIndexes.add(i);
-            } else {
-                i = -1;
+                
+                endingIndex = i;
+                
+                i++;
+            }
+            
+            if (startingIndex != endingIndex) {
+                //println("Edge is between indexes: [" + startingIndex + ", " + endingIndex + "]");
+                possibleEdgeIndexes.add( new PVector(startingIndex, endingIndex) );
+            }
+        }
+        
+        // After the possible edges have been identified, find the edge that is closest to the center (predicted location)
+        int closestEdge = 0;
+        for (int i = 1; i < possibleEdgeIndexes.size(); i++) {
+            int closestPosition = (int)(possibleEdgeIndexes.get(closestEdge).x + possibleEdgeIndexes.get(closestEdge).y) / 2;    
+            int currentPosition = (int)(possibleEdgeIndexes.get(i).x + possibleEdgeIndexes.get(i).y) / 2;    
+            
+            int closestDistance = abs(capturePixels.size() / 2 - closestPosition);
+            int currentDistance = abs(capturePixels.size() / 2 - currentPosition);
+            if (currentDistance < closestDistance) {
+                closestEdge = i;    
+            }
+            
+        }
+        
+        edgeIndexes = new ArrayList<Integer>();
+        if (possibleEdgeIndexes.size() > 0) {
+            for (int i = (int)possibleEdgeIndexes.get(closestEdge).x; i < possibleEdgeIndexes.get(closestEdge).y; i++) {
+                edgeIndexes.add(i); 
             }
         }
         

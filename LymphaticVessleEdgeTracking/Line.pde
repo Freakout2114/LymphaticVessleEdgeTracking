@@ -3,10 +3,12 @@ public class Line
 {
     private int id;
     private Point linePos1, linePos2;    // Position of the line end points
+    private Point initialEdge1Pos, initialEdge2Pos;    // Position of the edge walls at the first frame
     private Point edge1Pos, edge2Pos;    // Position of the edge walls
     private Point previousEdge1Pos, previousEdge2Pos;    // Position of the edge walls
     private Point predictedEdge1Pos, predictedEdge2Pos;    // Position of the edge walls
     private boolean selected = false;
+    private float windowSize = 20;
     
     Line(PVector p1, PVector p2, int id) {
         this.linePos1 = new Point(p1);
@@ -44,31 +46,44 @@ public class Line
         PVector newP1, newP2;
         PVector pointDir = PVector.sub(linePos2.pos, linePos1.pos);
         pointDir.normalize();
-        pointDir.mult(10);
-        newP1 = PVector.sub(predictedEdge1Pos.getPos(), pointDir);
-        newP2 = PVector.add(predictedEdge1Pos.getPos(), pointDir);
+        pointDir.mult(windowSize);
+        // Predicted Edge
+        //newP1 = PVector.sub(predictedEdge1Pos.getPos(), pointDir);
+        //newP2 = PVectoradd(predictedEdge1Pos.getPos(), pointDir);
+        // Last Edge
+        newP1 = PVector.sub(previousEdge1Pos.getPos(), pointDir);
+        newP2 = PVector.add(previousEdge1Pos.getPos(), pointDir);
         
-        // Display the new area
+        // Display the new window area
         Point newP1Point = new Point(newP1);
         Point newP2Point = new Point(newP2);
         newP1Point.display();
         newP2Point.display();
         
-        // *************** I think the PVector is offset because of the video play area ************* 24 pixels
-        
-        
+        // Get the pixels from the new Window
         ArrayList<Integer> capturePixels = edgeDetection.getEdgeBetweenPoints(newP1, newP2);
         
+        // Get the observed edge location
         float edgePosition = (int)edgeDetection.diffLessStd(capturePixels);
+        
         PVector pvectorPosition = indexToPVector(edgePosition, newP1, newP2);
         
-        edge1Pos = new Point(pvectorPosition);
+        // Check if the edge has moved too far away
+        float displacement = PVector.dist(pvectorPosition, predictedEdge1Pos.getPos());
+        float tolerance = PVector.dist(previousEdge1Pos.getPos(), predictedEdge1Pos.getPos());
+        
+        // Set the new position and display
+        if (displacement > 4) {//max(tolerance * 1.5, 3)) {
+            println("Displacement: " + displacement + ", tolerance: " + tolerance);
+            edge1Pos = new Point(previousEdge1Pos.getPos());
+        } else {
+            edge1Pos = new Point(pvectorPosition);
+        }
+        
         noFill(); stroke(255, 0, 0);
         edge1Pos.displayNoStyle();
-        noFill(); stroke(0, 255, 0);
-        previousEdge1Pos.displayNoStyle();
         
-        
+        // Predict the next location
         PVector velocity = PVector.sub(edge1Pos.getPos(), previousEdge1Pos.getPos());
         PVector predictedPos = PVector.add(edge1Pos.getPos(), velocity);
         predictedEdge1Pos = new Point(predictedPos);
