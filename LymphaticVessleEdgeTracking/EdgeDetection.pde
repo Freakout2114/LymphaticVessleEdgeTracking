@@ -170,7 +170,7 @@ public class EdgeDetection
         rect(weightedAvg * pixelW, capture.height + displayOffset.y + 64, pixelW, 10);
         }
         
-        return weightedAvg;
+        return weightedAvg + 1;
     }
     
     public float standardDeviation(ArrayList<Integer> capturePixels) {

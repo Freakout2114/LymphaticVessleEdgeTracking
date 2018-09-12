@@ -24,7 +24,12 @@ public class Timestamp
     
     public int getId() { return id; }
     public int getTimestamp() { return timestamp; }
-    public float getE1Displacement() { return  e1Displacement; }
+    public float getE1Displacement() { 
+        float value = e1Displacement;
+        //value = floor(value * 1000);
+        //value = value / 1000.0;
+        return  value; 
+    }
     public float getE2Displacement() { return e2Displacement; }
     public float getDiameter() { return diameter; }
     public int getEdgeSize() { return edgeSize; }

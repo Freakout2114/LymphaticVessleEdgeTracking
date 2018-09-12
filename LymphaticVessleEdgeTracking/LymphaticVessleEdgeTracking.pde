@@ -137,7 +137,7 @@ public PImage loadVideoNextFrame(boolean forceLoad) {
         // If video loaded and not paused
         if (!pauseVideo) {
             timeStamp += 1;
-            video.jump(map(timeStamp, 0, video.duration() * 25, 0, video.duration()));
+            //video.jump(map(timeStamp, 0, video.duration() * 25, 0, video.duration()));
             video.read();
             
             return video;
