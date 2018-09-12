@@ -25,9 +25,9 @@ public class EdgeDetection
             color c = capture.pixels[index];
             fill(c);
             float pixelW = capture.width / PVector.dist(p1, p2);
-            rect(i * pixelW, capture.height + displayOffset.y, pixelW, 10);
+            //rect(i * pixelW, capture.height + displayOffset.y, pixelW, 10);
             fill(0);
-            text((int)brightness(c), i * pixelW + pixelW/2, capture.height + displayOffset.y + 16, pixelW);
+            //text((int)brightness(c), i * pixelW + pixelW/2, capture.height + displayOffset.y + 16, pixelW);
             capturePixels.add(c);
         }
         
@@ -49,7 +49,7 @@ public class EdgeDetection
             }
         }
         
-        if (darkIndex > pix.size() * 1/4 && darkIndex < pix.size() * 3/4) {
+        if (darkIndex > pix.size() * 1/3 && darkIndex < pix.size() * 2/3) {
             println("1 Line");
             return 1;
         }
@@ -133,7 +133,7 @@ public class EdgeDetection
                 // Debug drawing 
                 float pixelW = capture.width / capturePixels.size();
                 fill(capturePixels.get(i));
-                rect(i * pixelW, capture.height + displayOffset.y + 32, pixelW, 10);
+                //rect(i * pixelW, capture.height + displayOffset.y + 32, pixelW, 10);
                 edgeIndexes.add(i);
                 
                 endingIndex = i;
@@ -190,7 +190,7 @@ public class EdgeDetection
         
         {
         float pixelW = capture.width / capturePixels.size();
-        rect(weightedAvg * pixelW, capture.height + displayOffset.y + 64, pixelW, 10);
+        //rect(weightedAvg * pixelW, capture.height + displayOffset.y + 64, pixelW, 10);
         }
         
         return weightedAvg + 1;

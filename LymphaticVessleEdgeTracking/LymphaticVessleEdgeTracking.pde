@@ -17,15 +17,29 @@ PVector mouseInitialPos;        // When the user is creating a line by draging t
 
 int timeStamp = 0;              // used as a time stamp in the output recordings
 
+PApplet pApplet;
+
+// Menu
+MenuBar menuBar;
+Menu fileMenu, editMenu, viewMenu, helpMenu, webCamMenu;
+MenuItem videoLoad, projectLoad, projectSave, webCamRefresh;
+MenuItem[] webCams;
+MenuListener menuListener;
+
 public void setup() {
     size(800, 800);
     surface.setResizable(true);
     frameRate(120);   
+    pApplet = this;
     
+    println("this: " + this);
+    println("pApplet: " + pApplet);
     Initialise();
 }
 
 public void Initialise() {
+    menuInitialise();
+    
     // Creation of the buttons
     float xPosition = 0;    // Used to space the position of the buttons accross the page
     buttons = new ArrayList<Button>(); 
@@ -60,6 +74,49 @@ public void Initialise() {
     loadVideo();
 }
 
+public void menuInitialise() {
+    menuListener = new MenuListener();
+    menuBar = new MenuBar();
+  
+    fileMenu = new Menu("File");
+    editMenu = new Menu("Edit");
+    viewMenu = new Menu("View");
+    helpMenu = new Menu("Help");
+    
+    menuBar.add(fileMenu);
+    menuBar.add(editMenu);
+    menuBar.add(viewMenu);
+    menuBar.add(helpMenu);
+    
+    
+    // File Items
+    videoLoad = new MenuItem("Import Video File"); 
+    webCamMenu = new Menu("Use Webcam");
+    projectSave = new MenuItem("Save Project"); 
+    projectLoad = new MenuItem("Load Project"); 
+    
+    videoLoad.addActionListener(menuListener);
+    projectSave.addActionListener(menuListener);
+    projectLoad.addActionListener(menuListener);
+    
+    fileMenu.add(videoLoad);
+    fileMenu.add(webCamMenu);
+    fileMenu.add(projectSave);
+    fileMenu.add(projectLoad);
+    
+    // Webcam Items
+    webCamRefresh = new MenuItem("Refresh Input Devices"); 
+    
+    webCamRefresh.addActionListener(menuListener);
+    
+    webCamMenu.add(webCamRefresh);
+      
+  
+    PSurfaceAWT awtSurface = (PSurfaceAWT)surface;
+    PSurfaceAWT.SmoothCanvas smoothCanvas = (PSurfaceAWT.SmoothCanvas)awtSurface.getNative();
+    smoothCanvas.getFrame().setMenuBar(menuBar);
+}
+
 public void loadCamera() {
     println("Loading Camera");
     String[] cameras = Capture.list();
@@ -76,11 +133,30 @@ public void loadCamera() {
             
         // The camera can be initialized directly using an 
         // element from the array returned by list():
-        camera = new Capture(this, cameras[73]);
-        camera.start();     
+        println("loadCamera    this: " + this);
+        camera = new Capture(this, cameras[102]);
+        println("Before: " + camera);
+        camera.start();  
+        println("After: " + camera); 
     }   
     println("Loading Camera Completed");
 }
+    
+
+public void loadCamera(int index) {
+    println("Loading Camera");
+    String[] cameras = Capture.list();
+      
+    if (cameras.length == 0) {
+        println("There are no cameras available for capture.");
+        exit();
+    } else {
+        println("loadCamera    this: " + this);
+        camera = new Capture(this, cameras[index]);
+        camera.start();  
+    }   
+    println("Loading Camera Completed");
+}    
     
 public void fileSelected(File selection) {
     if (selection == null) {
@@ -101,11 +177,15 @@ public void loadVideo() {
 }
 
 public PImage loadCameraNextFrame() {
-    if (camera == null)
+    
+    if (camera == null) {
         return null;
+    }
         
     if (camera.available() == true) {
         camera.read();
+    } else {
+        camera.start();
     }
     
     return camera;
@@ -175,7 +255,7 @@ public void draw() {
     
     for (Line line : lines) {
         line.analyse();
-        //line.display();
+        line.display();
     }
     
     

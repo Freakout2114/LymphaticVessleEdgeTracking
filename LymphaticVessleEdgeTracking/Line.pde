@@ -11,6 +11,8 @@ public class Line
     private boolean selected = false;
     private float windowSize = 20;
     
+    private ArrayList<Timestamp> localTimestamps = new ArrayList<Timestamp>();    // Records the timestamps to show the debug movement 
+    
     Line(PVector p1, PVector p2, int id) {
         this.linePos1 = new Point(p1);
         this.linePos2 = new Point(p2);
@@ -88,8 +90,8 @@ public class Line
         // Display the new window area
         Point e1NewP1Point = new Point(e1NewP1);
         Point e1NewP2Point = new Point(e1NewP2);
-        e1NewP1Point.display();
-        e1NewP2Point.display();
+        //e1NewP1Point.display();
+        //e1NewP2Point.display();
         
         // Get the pixels from the new Window
         ArrayList<Integer> capturePixels = edgeDetection.getEdgeBetweenPoints(e1NewP1, e1NewP2);
@@ -111,9 +113,8 @@ public class Line
             edge1Pos = new Point(pvectorPosition);
         }
         
-        noFill(); stroke(255, 0, 0);
+        fill(255); noStroke();
         edge1Pos.displayNoStyle();
-        
         // Predict the next location
         PVector velocity = PVector.sub(edge1Pos.getPos(), previousEdge1Pos.getPos());
         PVector predictedPos = PVector.add(edge1Pos.getPos(), velocity);
@@ -132,8 +133,8 @@ public class Line
             
             Point e2NewP1Point = new Point(e2NewP1);
             Point e2NewP2Point = new Point(e2NewP2);
-            e2NewP1Point.display();
-            e2NewP2Point.display();
+            //e2NewP1Point.display();
+            //e2NewP2Point.display();
             
             // Get the pixels from the new Window
             capturePixels = edgeDetection.getEdgeBetweenPoints(e2NewP1, e2NewP2);
@@ -155,7 +156,7 @@ public class Line
                 edge2Pos = new Point(pvectorPosition);
             }
             
-            noFill(); stroke(255, 0, 0);
+            fill(255); noStroke();
             edge2Pos.displayNoStyle();
             // Predict the next location
             velocity = PVector.sub(edge2Pos.getPos(), previousEdge2Pos.getPos());
@@ -168,7 +169,7 @@ public class Line
         
         
         // Add Timestamps
-        if (output.isRecording() && !pauseVideo) {
+        if (!pauseVideo) {
             Timestamp timestamp;
             
             if (edgeSize == 1) {
@@ -180,7 +181,16 @@ public class Line
                 float diameter = PVector.dist(edge1Pos.getPos(), edge2Pos.getPos()); 
                 timestamp = new Timestamp(id, e1Displacement, e2Displacement, diameter);
             }
-            output.addTimestamp(timestamp);
+            
+            localTimestamps.add(timestamp);
+            
+            if (localTimestamps.size() > 300) {
+                localTimestamps.remove(0);    
+            }
+            
+            if (output.isRecording()) {
+                output.addTimestamp(timestamp);
+            }
         }
     }
     
@@ -201,6 +211,16 @@ public class Line
         if (selected) { linePos1.display(id); } else { linePos1.display(); }
         linePos2.display();
         strokeWeight(1);
+        
+        PVector mid = PVector.add(linePos1.pos, linePos2.pos);
+        mid = PVector.div(mid, 2);
+        PVector dir = PVector.sub(linePos2.pos, linePos1.pos);
+        dir.normalize();
+        
+        float y = height - 128;
+        for (int i = 0; i < localTimestamps.size(); i++) {
+            Timestamp ts = localTimestamps.get(i);
+        }
     }
     
     public PVector indexToPVector(float index) {
