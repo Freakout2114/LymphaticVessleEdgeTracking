@@ -190,14 +190,14 @@ public class Record extends Button
             if (subText != null)
                 displayDropdown();
             stroke(0, 0, 50);
-            if (output.getRecording()) {
+            if (output.isRecording()) {
                 fill(200, 0, 0);    
             } else {
                 fill(200, 225, 225);
             }
         } else {
             stroke(0);
-            if (output.getRecording()) {
+            if (output.isRecording()) {
                 fill(#e10000);
             } else {
                 fill(#e1e1e1);

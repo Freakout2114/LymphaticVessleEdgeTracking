@@ -136,8 +136,10 @@ public PImage loadVideoNextFrame(boolean forceLoad) {
         
         // If video loaded and not paused
         if (!pauseVideo) {
-            timeStamp++;
+            timeStamp += 1;
+            //video.jump(map(timeStamp, 0, video.duration() * 25, 0, video.duration()));
             video.read();
+            
             return video;
         }
     }
@@ -148,36 +150,34 @@ public PImage loadVideoNextFrame(boolean forceLoad) {
 public void draw() {
     background(#ffffff);
     fill(0);
-    textAlign(LEFT);
     text("FrameCount: " + (int)frameCount, 32, height - 48);
     text("TimeStamp: " + (int)timeStamp, 32, height - 32);
     text("FPS: " + (int)frameRate, 32, height - 16);
     
-    for (int itterations = 0; itterations < 5; itterations++) {
-        // Get the next frame of video or webcam
-        if (inputMode.equals("Camera")) {
-            capture = loadCameraNextFrame();
-        } else {
-            capture = loadVideoNextFrame();
-            if (capture != null) {
-                float percentage = video.time() / video.duration();
-                fill(255);
-                stroke(0);
-                line(5, 24 + 5 + capture.height, capture.width - 5, 24 + 5 + capture.height);
-                rect(capture.width * percentage - 5, 24 + capture.height, 5, 10);
-            }
-        }
-        
+    // Get the next frame of video or webcam
+    if (inputMode.equals("Camera")) {
+        capture = loadCameraNextFrame();
+    } else {
+        capture = loadVideoNextFrame();
         if (capture != null) {
-            preProcessing.applyFilters();
-            image(capture, 0, 24);
-        }
-        
-        for (Line line : lines) {
-            line.analyse();
-            //line.display();
+            float percentage = video.time() / video.duration();
+            fill(255);
+            stroke(0);
+            line(5, 24 + 5 + capture.height, capture.width - 5, 24 + 5 + capture.height);
+            rect(capture.width * percentage - 5, 24 + capture.height, 5, 10);
         }
     }
+    
+    if (capture != null) {
+        preProcessing.applyFilters();
+        image(capture, 0, 24);
+    }
+    
+    for (Line line : lines) {
+        line.analyse();
+        //line.display();
+    }
+    
     
     for (Button button : buttons) {
         button.mouseHover();

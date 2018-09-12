@@ -2,6 +2,7 @@
 public class Line
 {
     private int id;
+    private int edgeSize = 1;
     private Point linePos1, linePos2;    // Position of the line end points
     private Point initialEdge1Pos, initialEdge2Pos;    // Position of the edge walls at the first frame
     private Point edge1Pos, edge2Pos;    // Position of the edge walls
@@ -31,6 +32,7 @@ public class Line
         PVector pvectorPosition = indexToPVector(edgePosition);
         
         // Set the defaults for the initialisation
+        initialEdge1Pos = new Point(pvectorPosition);
         edge1Pos = new Point(pvectorPosition);
         previousEdge1Pos = new Point(pvectorPosition);
         predictedEdge1Pos = new Point(pvectorPosition);
@@ -90,6 +92,22 @@ public class Line
         noFill(); stroke(0, 0, 255);
         predictedEdge1Pos.displayNoStyle();
         
+        
+        // Add Timestamps
+        if (output.isRecording() && !pauseVideo) {
+            Timestamp timestamp;
+            
+            if (edgeSize == 1) {
+                float e1Displacement = PVector.dist(edge1Pos.getPos(), initialEdge1Pos.getPos());
+                timestamp = new Timestamp(id, e1Displacement);
+            } else { // 2 Edges
+                float e1Displacement = PVector.dist(edge1Pos.getPos(), initialEdge1Pos.getPos());
+                float e2Displacement = PVector.dist(edge2Pos.getPos(), initialEdge2Pos.getPos());
+                float diameter = PVector.dist(edge1Pos.getPos(), edge2Pos.getPos()); 
+                timestamp = new Timestamp(id, e1Displacement, e2Displacement, diameter);
+            }
+            output.addTimestamp(timestamp);
+        }
     }
     
     public void display() {
@@ -118,4 +136,6 @@ public class Line
     public boolean getSelected() { return selected; }
     public void setSelected(boolean value) { this.selected = value; }
     public void toggleSelected() { this.selected = this.selected ? false : true; }
+    public int getEdgeSize() { return edgeSize; }
+    public int getId() { return this.id; }
 }
