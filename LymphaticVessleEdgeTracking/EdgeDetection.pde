@@ -34,6 +34,29 @@ public class EdgeDetection
         return capturePixels;
     }
     
+    // Looks for the darkest pixel between the two points. If the index of the darkest pixel is
+    // within the 1/4 to 3/4 range then it is assumed to be a single line. Otherwise it assumes 2 lines
+    public int getEstimateLineSize(PVector p1, PVector p2) {
+        ArrayList<Integer> pix = getPixelsBetweenPoints(p1, p2);
+        
+        int darkIndex = 0;
+        for (int i = 0; i < pix.size(); i++) {
+            float dark = brightness(pix.get(darkIndex));   
+            float c = brightness(pix.get(i));   
+            
+            if (c < dark) {
+                darkIndex = i;    
+            }
+        }
+        
+        if (darkIndex > pix.size() * 1/4 && darkIndex < pix.size() * 3/4) {
+            println("1 Line");
+            return 1;
+        }
+        println("2 Lines");
+        return 2;
+    }
+    
     /*
         This function works by:
         1. Getting the darkest pixel index from the array
